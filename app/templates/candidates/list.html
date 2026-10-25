@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Candidates · {{ settings.app_name }}{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-4">
+  <h1 class="text-2xl font-semibold">Candidates</h1>
+  <a href="/candidates/new" class="btn btn-primary">+ Add candidate</a>
+</div>
+<div class="mb-4">
+  <input class="input max-w-md" type="search" name="q" value="{{ q }}" placeholder="Search name, email, phone, notes, resume…"
+         hx-get="/candidates" hx-trigger="input changed delay:300ms, search" hx-target="#candidate-rows" hx-push-url="true">
+</div>
+<div class="card p-0 overflow-x-auto">
+  <table class="w-full text-sm">
+    <thead class="bg-slate-50 text-left text-slate-500">
+      <tr><th class="px-4 py-2">Name</th><th class="px-4 py-2">Contact</th><th class="px-4 py-2">Resume</th><th class="px-4 py-2">Agent</th><th class="px-4 py-2">Added</th></tr>
+    </thead>
+    <tbody id="candidate-rows">{% include "partials/candidate_rows.html" %}</tbody>
+  </table>
+</div>
+{% endblock %}

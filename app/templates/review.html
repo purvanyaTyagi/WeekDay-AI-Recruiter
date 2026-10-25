@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Review queue · {{ settings.app_name }}{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-semibold mb-4">Review queue</h1>
+{% if flagged %}
+<section class="mb-6">
+  <h2 class="font-semibold mb-2">Candidates needing attention ({{ flagged|length }})</h2>
+  <ul class="card divide-y divide-slate-100 p-0">
+    {% for c in flagged %}<li class="px-4 py-2 text-sm"><a class="font-medium text-indigo-700 hover:underline" href="/candidates/{{ c.id }}">{{ c.full_name }}</a> — {{ c.attention_reason }}</li>{% endfor %}
+  </ul>
+</section>
+{% endif %}
+<section class="mb-6">
+  <h2 class="font-semibold mb-2">Drafts waiting for approval ({{ pending|length }})</h2>
+  <div class="space-y-3">{% for m in pending %}{% set show_candidate = true %}{% include "partials/message.html" %}{% else %}<p class="text-sm text-slate-500">Nothing to review.</p>{% endfor %}</div>
+</section>
+<section class="mb-6">
+  <h2 class="font-semibold mb-2">Queued for quiet hours ({{ queued|length }})</h2>
+  <div class="space-y-3">{% for m in queued %}{% set show_candidate = true %}{% include "partials/message.html" %}{% else %}<p class="text-sm text-slate-500">Nothing queued.</p>{% endfor %}</div>
+</section>
+{% if failed %}
+<section>
+  <h2 class="font-semibold mb-2">Failed to send</h2>
+  <div class="space-y-3">{% for m in failed %}{% set show_candidate = true %}{% include "partials/message.html" %}{% endfor %}</div>
+</section>
+{% endif %}
+{% endblock %}

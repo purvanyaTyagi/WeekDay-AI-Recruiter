@@ -1,0 +1,54 @@
+<section class="card">
+  <h2 class="font-semibold mb-3">Reach out</h2>
+  {% if not jobs %}
+    <p class="text-sm text-slate-500">Create a <a class="text-indigo-700 underline" href="/jobs/new">job</a> first.</p>
+  {% elif c.opted_out %}
+    <p class="text-sm text-red-700">This candidate opted out. Outreach is disabled.</p>
+  {% else %}
+  <form method="post" action="/candidates/{{ c.id }}/outreach" class="flex flex-wrap items-end gap-3"
+        onsubmit="this.querySelector('button').disabled=true;this.querySelector('button').textContent='Drafting…'">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="grow min-w-[12rem]"><label class="label" for="job_id">Job</label>
+      <select class="input" name="job_id" id="job_id">{% for j in jobs %}<option value="{{ j.id }}">{{ j.title }}</option>{% endfor %}</select></div>
+    <div><label class="label" for="channel">Channel</label>
+      <select class="input" name="channel" id="channel">
+        <option value="email" {% if c.preferred_channel == 'email' %}selected{% endif %} {% if not c.email %}disabled{% endif %}>Email</option>
+        <option value="sms" {% if c.preferred_channel == 'sms' %}selected{% endif %} {% if not c.phone %}disabled{% endif %}>SMS</option>
+      </select></div>
+    <button class="btn btn-primary" {% if c.agent_paused %}disabled title="Agent is paused"{% endif %}>AI: draft &amp; {{ "send" if send_mode == 'auto' else "queue for review" }}</button>
+  </form>
+  <p class="text-xs text-slate-500 mt-2">Send mode for this candidate: <strong>{{ "auto-send" if send_mode == 'auto' else "review before send" }}</strong>. The AI identifies itself as an AI in every message.</p>
+  {% endif %}
+</section>
+
+<section class="card" id="conversation">
+  <h2 class="font-semibold mb-3">Conversation</h2>
+  <div class="space-y-3">
+    {% for m in c.messages %}{% include "partials/message.html" %}{% else %}<p class="text-sm text-slate-500">No messages yet.</p>{% endfor %}
+  </div>
+  {% if c.engagements %}
+  <details class="mt-4">
+    <summary class="cursor-pointer text-sm text-slate-600">Write a message yourself</summary>
+    <form method="post" action="/candidates/{{ c.id }}/messages" class="space-y-2 mt-2">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <select class="input" name="engagement_id">{% for e in c.engagements %}<option value="{{ e.id }}">{{ e.job.title }} ({{ e.channel }})</option>{% endfor %}</select>
+      <input class="input" name="subject" placeholder="Subject (email only; blank = reply in thread)">
+      <textarea class="input" name="body" rows="4" placeholder="Your message"></textarea>
+      <button class="btn btn-secondary btn-sm">Send as recruiter</button>
+    </form>
+  </details>
+  {% if dev_simulation %}
+  <details class="mt-3">
+    <summary class="cursor-pointer text-sm text-slate-600">Dev tool: simulate a candidate reply</summary>
+    <form method="post" action="/candidates/{{ c.id }}/simulate-inbound" class="space-y-2 mt-2"
+          onsubmit="this.querySelector('button').disabled=true;this.querySelector('button').textContent='Processing…'">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <select class="input" name="channel"><option value="email">Email</option><option value="sms">SMS</option></select>
+      <textarea class="input" name="body" rows="3" placeholder="e.g. Sounds interesting! Could we do Tuesday at 3pm?"></textarea>
+      <button class="btn btn-secondary btn-sm">Simulate reply</button>
+    </form>
+    <p class="text-xs text-slate-500 mt-1">Shown only while console adapters are active (no real email/SMS credentials).</p>
+  </details>
+  {% endif %}
+  {% endif %}
+</section>

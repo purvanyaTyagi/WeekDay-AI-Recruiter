@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Interviews · {{ settings.app_name }}{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-4">
+  <h1 class="text-2xl font-semibold">Interviews</h1>
+</div>
+<form method="get" action="/interviews" class="card flex flex-wrap items-end gap-3 mb-4">
+  <div><label class="label" for="status">Status</label>
+    <select class="input" id="status" name="status">
+      <option value="">All ({{ counts.values()|sum }})</option>
+      {% for st in statuses %}<option value="{{ st }}" {% if st == status %}selected{% endif %}>{{ st.replace('_',' ')|capitalize }} ({{ counts.get(st, 0) }})</option>{% endfor %}
+    </select></div>
+  <div><label class="label" for="date_from">From</label><input class="input" type="date" id="date_from" name="date_from" value="{{ date_from }}"></div>
+  <div><label class="label" for="date_to">To</label><input class="input" type="date" id="date_to" name="date_to" value="{{ date_to }}"></div>
+  <button class="btn btn-primary">Filter</button>
+  {% if status or date_from or date_to %}<a class="btn btn-secondary" href="/interviews">Clear</a>{% endif %}
+  <p class="text-xs text-slate-500 w-full">Dates are in {{ settings.app_timezone }}.</p>
+</form>
+<div class="space-y-3">
+{% for iv in interviews %}
+  <div class="card">
+    <div class="flex flex-wrap items-start justify-between gap-3">
+      <div>
+        <a href="/interviews/{{ iv.id }}" class="font-semibold text-indigo-700 hover:underline">{{ iv.candidate.full_name }}</a>
+        <span class="text-slate-500">·</span> <span>{{ iv.job.title }}</span>
+        <div class="text-sm text-slate-600">{{ iv.scheduled_at|localdt(iv.candidate.timezone, "%a %d %b %Y, %H:%M %Z") }}
+          {% if iv.candidate.timezone and iv.candidate.timezone != settings.app_timezone %}<span class="text-slate-400">({{ iv.scheduled_at|localdt }})</span>{% endif %}</div>
+      </div>
+      <div class="flex items-center gap-2">
+        {% include "partials/interview_status.html" %}
+        {% if iv.evaluation and iv.evaluation.suggested_score %}<span class="badge bg-slate-100 text-slate-700" title="AI suggestion, not a decision">AI score {{ iv.evaluation.suggested_score }}/5</span>{% endif %}
+        {% set link = interview_url(iv) %}{% include "partials/copy_button.html" %}
+        <a href="/interviews/{{ iv.id }}" class="btn btn-secondary btn-sm">Open</a>
+      </div>
+    </div>
+    <details class="mt-2"><summary class="cursor-pointer text-sm text-slate-600">Briefing from the Outreach Agent</summary>
+      <p class="text-sm mt-1 prose-pre">{{ iv.briefing or "(none)" }}</p></details>
+  </div>
+{% else %}
+  <div class="card text-center text-slate-500">No interviews{% if status or date_from or date_to %} match these filters{% endif %}.</div>
+{% endfor %}
+</div>
+{% endblock %}

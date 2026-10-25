@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Interview: {{ iv.candidate.full_name }} · {{ settings.app_name }}{% endblock %}
+{% block content %}
+<div class="mb-4">
+  <a href="/interviews" class="text-sm text-slate-500 hover:underline">← Interviews</a>
+  <div class="flex flex-wrap items-center gap-3 mt-1">
+    <h1 class="text-2xl font-semibold">{{ iv.candidate.full_name }} · {{ iv.job.title }}</h1>
+    {% include "partials/interview_status.html" %}
+  </div>
+  <p class="text-sm text-slate-600">Scheduled {{ iv.scheduled_at|localdt(iv.candidate.timezone, "%A %d %B %Y, %H:%M %Z") }}
+    {% if iv.started_at %}· started {{ iv.started_at|localdt(iv.candidate.timezone, "%H:%M") }}{% endif %}
+    {% if iv.ended_at %}· ended {{ iv.ended_at|localdt(iv.candidate.timezone, "%H:%M") }}{% endif %}
+    {% if iv.end_reason %}({{ iv.end_reason }}){% endif %}
+    · <a class="text-indigo-700 hover:underline" href="/candidates/{{ iv.candidate_id }}">candidate page</a></p>
+</div>
+
+<div class="grid lg:grid-cols-3 gap-4">
+  <div class="lg:col-span-2 space-y-4">
+    {% if iv.status in ("completed", "incomplete") %}
+    <section class="card">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="font-semibold">AI evaluation</h2>
+        <form method="post" action="/interviews/{{ iv.id }}/summary"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button class="btn btn-secondary btn-sm">{{ "Regenerate" if iv.evaluation else "Generate" }}</button></form>
+      </div>
+      <p class="text-xs rounded bg-amber-50 border border-amber-200 text-amber-900 px-2 py-1 mb-3">A recommendation only, written by AI from the transcript. You make the decision; check it against the transcript.</p>
+      {% set ev = iv.evaluation %}
+      {% if not ev %}<p class="text-sm text-slate-500">Being generated… refresh in a moment.</p>
+      {% elif ev.error %}<p class="text-sm text-red-700">Summary failed: {{ ev.error }}</p>
+      {% else %}
+        {% if ev.suggested_score %}<p class="mb-2"><span class="text-3xl font-semibold">{{ ev.suggested_score }}</span><span class="text-slate-500">/5 suggested score</span></p>{% endif %}
+        <p class="text-sm mb-3">{{ ev.summary }}</p>
+        <div class="grid md:grid-cols-2 gap-4 text-sm">
+          <div><h3 class="font-semibold text-green-800 mb-1">Strengths</h3>
+            <ul class="space-y-2">{% for p in ev.strengths %}<li><div>{{ p.point }}</div>{% if p.evidence %}<div class="text-xs text-slate-500 italic">“{{ p.evidence }}”</div>{% endif %}</li>{% else %}<li class="text-slate-500">None noted.</li>{% endfor %}</ul></div>
+          <div><h3 class="font-semibold text-amber-800 mb-1">Concerns</h3>
+            <ul class="space-y-2">{% for p in ev.concerns %}<li><div>{{ p.point }}</div>{% if p.evidence %}<div class="text-xs text-slate-500 italic">“{{ p.evidence }}”</div>{% endif %}</li>{% else %}<li class="text-slate-500">None noted.</li>{% endfor %}</ul></div>
+        </div>
+        {% if ev.reasoning %}<h3 class="font-semibold text-sm mt-3 mb-1">Reasoning</h3><p class="text-sm">{{ ev.reasoning }}</p>{% endif %}
+        <p class="text-xs text-slate-400 mt-2">Model: {{ ev.model }} · {{ ev.created_at|localdt }}</p>
+      {% endif %}
+    </section>
+    {% endif %}
+
+    <section class="card">
+      <h2 class="font-semibold mb-3">Transcript</h2>
+      {% if not iv.transcript %}<p class="text-sm text-slate-500">No transcript yet.</p>{% endif %}
+      <ol class="space-y-2">
+        {% for e in iv.transcript %}
+          {% if e.role == "system" %}
+            <li class="text-center text-xs text-slate-500">{{ e.created_at|localdt(iv.candidate.timezone, "%H:%M:%S") }} · {{ e.content }}</li>
+          {% else %}
+            <li class="flex {% if e.role == 'candidate' %}justify-end{% endif %}">
+              <div class="max-w-[85%] rounded-lg px-3 py-2 text-sm {% if e.role == 'candidate' %}bg-sky-50 border border-sky-200{% else %}bg-white border border-slate-200{% endif %}">
+                <div class="text-xs text-slate-500 mb-0.5">{{ "Candidate" if e.role == "candidate" else "AI interviewer" }} · {{ e.created_at|localdt(iv.candidate.timezone, "%H:%M:%S") }}</div>
+                <div class="prose-pre">{{ e.content }}</div>
+              </div>
+            </li>
+          {% endif %}
+        {% endfor %}
+      </ol>
+      {% if iv.status == "in_progress" %}<p class="text-xs text-slate-500 mt-3">Live. <a class="text-indigo-700 underline" href="/interviews/{{ iv.id }}">Refresh</a> to see new messages.</p>{% endif %}
+    </section>
+  </div>
+
+  <div class="space-y-4">
+    <section class="card space-y-3">
+      <h2 class="font-semibold">Controls</h2>
+      <div class="flex items-center gap-2"><input class="input text-xs" readonly value="{{ url }}">{% set link = url %}{% include "partials/copy_button.html" %}</div>
+      {% if iv.status == "scheduled" %}
+        <form method="post" action="/interviews/{{ iv.id }}/cancel" onsubmit="return confirm('Cancel this interview?')" class="space-y-1">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="notify" value="1" checked> Tell the candidate</label>
+          <button class="btn btn-danger btn-sm">Cancel interview</button>
+        </form>
+      {% endif %}
+      {% if iv.status == "in_progress" %}
+        <form method="post" action="/interviews/{{ iv.id }}/end" onsubmit="return confirm('End this interview now? The candidate will see that it has ended.')">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button class="btn btn-danger btn-sm">End interview now</button>
+        </form>
+      {% endif %}
+      {% if iv.status in ("scheduled", "no_show", "cancelled") %}
+        <form method="post" action="/interviews/{{ iv.id }}/reschedule" class="space-y-1">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <label class="label">Reschedule ({{ iv.candidate.timezone or settings.app_timezone }})</label>
+          <input class="input" type="datetime-local" name="start_local" required>
+          <button class="btn btn-secondary btn-sm">Reschedule &amp; resend link</button>
+        </form>
+      {% endif %}
+      <p class="text-xs text-slate-500">Questions asked: {{ iv.question_count }} / {{ settings.interview_max_questions }} · limit {{ settings.interview_max_minutes }} min</p>
+    </section>
+    <section class="card">
+      <h2 class="font-semibold mb-1">Briefing</h2>
+      <p class="text-xs text-slate-500 mb-2">Written by AI from the job description and resume; given to the Interview Agent.</p>
+      <p class="text-sm prose-pre">{{ iv.briefing or "(none)" }}</p>
+    </section>
+  </div>
+</div>
+{% endblock %}

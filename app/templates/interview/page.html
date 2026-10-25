@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Interview · {{ settings.company_name }}</title>
+  <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen">
+<div class="max-w-2xl mx-auto px-4 py-6 flex flex-col min-h-screen">
+  <header class="mb-4">
+    <p class="text-xs uppercase tracking-wide text-slate-500">{{ settings.company_name }}</p>
+    <h1 class="text-xl font-semibold">{{ iv.job.title }} — AI interview</h1>
+  </header>
+
+  {% if state == "too_early" %}
+    <div class="card text-center">
+      <p class="text-lg mb-2">Hi {{ candidate_name }}, your interview hasn't started yet.</p>
+      <p class="text-slate-600">Scheduled for <strong>{{ iv.scheduled_at|localdt(iv.candidate.timezone, "%A %d %B %Y, %H:%M %Z") }}</strong>
+        (<span id="local-time" data-utc="{{ iv.scheduled_at.isoformat() }}"></span> your device time).</p>
+      <p class="text-slate-600 mt-2">This page opens {{ settings.interview_grace_before_minutes }} minutes before the start time.</p>
+      <p class="mt-4 text-2xl font-mono" id="countdown"></p>
+    </div>
+    <script>
+      const opensAt = new Date("{{ iv.scheduled_at.isoformat() }}").getTime() - {{ settings.interview_grace_before_minutes }} * 60000;
+      document.getElementById("local-time").textContent = new Date(document.getElementById("local-time").dataset.utc).toLocaleString();
+      function tick() {
+        const ms = opensAt - Date.now();
+        if (ms <= 0) { location.reload(); return; }
+        const s = Math.floor(ms / 1000), d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60);
+        document.getElementById("countdown").textContent = (d ? d + "d " : "") + String(h).padStart(2, "0") + ":" + String(m).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
+      }
+      tick(); setInterval(tick, 1000);
+    </script>
+
+  {% elif state == "expired" %}
+    <div class="card text-center"><p class="text-lg">This interview link has expired.</p>
+      <p class="text-slate-600 mt-2">The start time has passed. Reply to our last message if you'd like to reschedule.</p></div>
+
+  {% elif state == "closed" %}
+    <div class="card text-center">
+      {% if iv.status == "completed" %}<p class="text-lg">The interview is complete. Thank you, {{ candidate_name }}!</p>
+        <p class="text-slate-600 mt-2">The hiring team will review the conversation and get in touch.</p>
+      {% elif iv.status == "cancelled" %}<p class="text-lg">This interview has been cancelled.</p>
+      {% else %}<p class="text-lg">This interview has ended.</p>{% endif %}
+    </div>
+
+  {% elif state == "open" %}
+    <div class="card" id="intro">
+      <p class="text-lg mb-3">Hi {{ candidate_name }}, welcome.</p>
+      <ul class="list-disc ml-5 space-y-1 text-slate-700 text-sm">
+        <li>You'll chat by text with an <strong>AI interviewer</strong>, not a person.</li>
+        <li>It takes about {{ settings.interview_max_minutes }} minutes and around {{ settings.interview_max_questions }} questions. Take your time with each answer.</li>
+        <li>The conversation is <strong>recorded and reviewed by the hiring team</strong>. People make all hiring decisions; the AI does not.</li>
+        <li>If your connection drops, reopen this link to carry on where you left off.</li>
+        {% if voice %}<li>Optional: you can speak your answers and hear the interviewer's questions. Your recording is sent to our speech provider (Gnani.ai) to turn it into text and is not stored; you can edit the text before sending. Only the text is recorded.</li>{% endif %}
+      </ul>
+      <label class="flex items-start gap-2 mt-4 text-sm"><input type="checkbox" id="consent" class="mt-1"> I understand this interview is with an AI and is recorded for the hiring team.</label>
+      <p id="start-error" class="field-error"></p>
+      <button id="start-btn" class="btn btn-primary mt-3">Start interview</button>
+    </div>
+  {% endif %}
+
+  {% if state in ("open", "in_progress") %}
+  <div id="chat" class="{% if state == 'open' %}hidden{% endif %} flex flex-col grow">
+    <div id="log" class="grow space-y-3 mb-3" aria-live="polite"></div>
+    <div id="notice" class="hidden mb-3 rounded border px-3 py-2 text-sm"></div>
+    <form id="composer" class="card p-3 sticky bottom-2">
+      <textarea id="input" class="input" rows="3" maxlength="{{ max_chars }}" placeholder="Type your answer… (Enter to send, Shift+Enter for a new line)"></textarea>
+      <div class="flex items-center justify-between mt-2">
+        <span id="typing" class="text-sm font-semibold text-slate-900"></span>
+        <div class="flex items-center gap-2">
+          {% if voice %}
+          <label class="flex items-center gap-1 text-xs text-slate-600"><input type="checkbox" id="speak-toggle"> Read replies aloud</label>
+          <button type="button" id="mic-btn" class="btn btn-secondary btn-sm" aria-pressed="false">🎤 Speak</button>
+          {% endif %}
+          <button type="button" id="retry-btn" class="btn btn-secondary btn-sm hidden">Retry</button>
+          <button id="send-btn" class="btn btn-primary btn-sm">Send</button>
+        </div>
+      </div>
+    </form>
+  </div>
+  <script>window.INTERVIEW = {token: "{{ iv.token }}", state: "{{ state }}", voice: {{ "true" if voice else "false" }}, maxRecordSeconds: {{ max_record_seconds }}};</script>
+  <script src="/static/interview.js"></script>
+  {% endif %}
+</div>
+</body>
+</html>

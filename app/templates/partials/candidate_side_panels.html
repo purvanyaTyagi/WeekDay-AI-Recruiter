@@ -1,0 +1,58 @@
+<section class="card">
+  <h2 class="font-semibold mb-2">Agent</h2>
+  <p class="text-sm mb-3">Status:
+    {% if c.opted_out %}<span class="badge bg-red-100 text-red-800">opted out</span>
+    {% elif c.agent_paused %}<span class="badge bg-slate-200 text-slate-700">paused</span>
+    {% else %}<span class="badge bg-green-100 text-green-800">active</span>{% endif %}</p>
+  <form method="post" action="/candidates/{{ c.id }}/agent" class="space-y-2">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    {% if c.agent_paused %}
+      {% if not c.opted_out %}<button name="op" value="resume" class="btn btn-secondary w-full justify-center">Resume agent</button>{% endif %}
+    {% else %}
+      <button name="op" value="pause" class="btn btn-danger w-full justify-center">Pause agent</button>
+    {% endif %}
+    {% if c.opted_out %}<button name="op" value="clear_opt_out" class="btn btn-secondary w-full justify-center" onclick="return confirm('Only clear the opt-out if the candidate asked to be contacted again. Continue?')">Clear opt-out</button>{% endif %}
+    {% if c.needs_attention %}<button name="op" value="resolve" class="btn btn-secondary w-full justify-center">Mark flag resolved</button>{% endif %}
+    <div class="pt-2">
+      <label class="label">Send mode</label>
+      <div class="flex flex-col gap-1 text-sm">
+        {% for val, label in [("mode_default", "Global default (" ~ global_mode ~ ")"), ("mode_auto", "Auto-send"), ("mode_review", "Review before send")] %}
+          {% set active = (val == 'mode_default' and not c.send_mode_override) or (val == 'mode_' ~ (c.send_mode_override or '')) %}
+          <button name="op" value="{{ val }}" class="text-left rounded px-2 py-1 {% if active %}bg-indigo-50 text-indigo-800 font-medium{% else %}hover:bg-slate-50{% endif %}">{{ "● " if active else "○ " }}{{ label }}</button>
+        {% endfor %}
+      </div>
+    </div>
+  </form>
+</section>
+
+<section class="card" id="interviews">
+  <h2 class="font-semibold mb-2">Interviews</h2>
+  <ul class="space-y-3 text-sm mb-3">
+    {% for iv in c.interviews %}
+      <li class="border-b border-slate-100 pb-2 last:border-0">
+        <div class="flex items-center justify-between gap-2">
+          <a class="font-medium text-indigo-700 hover:underline" href="/interviews/{{ iv.id }}">{{ iv.job.title }}</a>
+          {% include "partials/interview_status.html" %}
+        </div>
+        <div class="text-xs text-slate-500">{{ iv.scheduled_at|localdt(c.timezone) }}</div>
+      </li>
+    {% else %}<li class="text-slate-500">None yet.</li>{% endfor %}
+  </ul>
+  {% if jobs and not c.opted_out %}
+  <details>
+    <summary class="cursor-pointer text-sm text-slate-600">Schedule manually</summary>
+    <form method="post" action="/candidates/{{ c.id }}/interviews" class="space-y-2 mt-2">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <select class="input" name="job_id">{% for j in jobs %}<option value="{{ j.id }}">{{ j.title }}</option>{% endfor %}</select>
+      <label class="label">Start ({{ c.timezone or settings.app_timezone }})</label>
+      <input class="input" type="datetime-local" name="start_local" required>
+      <select class="input" name="channel">
+        <option value="email" {% if c.preferred_channel == 'email' %}selected{% endif %} {% if not c.email %}disabled{% endif %}>Send link by email</option>
+        <option value="sms" {% if c.preferred_channel == 'sms' %}selected{% endif %} {% if not c.phone %}disabled{% endif %}>Send link by SMS</option>
+      </select>
+      <button class="btn btn-secondary btn-sm">Schedule &amp; send link</button>
+      <p class="text-xs text-slate-500">A briefing is generated for the Interview Agent.</p>
+    </form>
+  </details>
+  {% endif %}
+</section>

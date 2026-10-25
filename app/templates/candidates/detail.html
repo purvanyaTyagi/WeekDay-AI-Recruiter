@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}{{ c.full_name }} · {{ settings.app_name }}{% endblock %}
+{% block content %}
+<div class="flex flex-wrap items-start justify-between gap-3 mb-4">
+  <div>
+    <h1 class="text-2xl font-semibold">{{ c.full_name }}</h1>
+    <p class="text-sm text-slate-600">{{ c.email }}{% if c.email and c.phone %} · {% endif %}{{ c.phone }} · prefers {{ "SMS" if c.preferred_channel == "sms" else "email" }}{% if c.timezone %} · {{ c.timezone }}{% endif %}</p>
+  </div>
+  <div class="flex gap-2">
+    <a href="/candidates/{{ c.id }}/edit" class="btn btn-secondary">Edit</a>
+    <form method="post" action="/candidates/{{ c.id }}/delete" onsubmit="return confirm('Delete {{ c.full_name|e }} and ALL linked data (resume, messages, interviews, transcripts)? This cannot be undone.')">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button class="btn btn-danger">Delete</button>
+    </form>
+  </div>
+</div>
+
+{% if c.needs_attention %}
+<div class="mb-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+  <strong>Needs your attention:</strong> {{ c.attention_reason }}
+</div>
+{% endif %}
+
+<div class="grid lg:grid-cols-3 gap-4">
+  <div class="lg:col-span-2 space-y-4">
+    {% include "partials/candidate_main_panels.html" ignore missing %}
+
+    <section class="card">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="font-semibold">Resume</h2>
+        <div class="flex items-center gap-2">{% include "partials/parse_badge.html" %}
+          {% if c.resume_path %}<a class="text-sm text-indigo-700 hover:underline" href="/candidates/{{ c.id }}/resume">Download {{ c.resume_filename }}</a>{% endif %}
+        </div>
+      </div>
+      {% if c.resume_parse_warnings %}
+        <div class="mb-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          <strong>Parsing problem.</strong> The AI agents will only see the text below, so check it.
+          <ul class="list-disc ml-5 mt-1">{% for w in c.resume_parse_warnings.splitlines() %}<li>{{ w }}</li>{% endfor %}</ul>
+        </div>
+      {% endif %}
+      {% if c.resume_text %}
+        <details><summary class="cursor-pointer text-sm text-slate-600">Show extracted text ({{ c.resume_text|length }} chars)</summary>
+          <pre class="prose-pre mt-2 text-xs bg-slate-50 p-3 rounded max-h-96 overflow-y-auto">{{ c.resume_text }}</pre>
+        </details>
+      {% elif not c.resume_path %}<p class="text-sm text-slate-500">No resume uploaded.</p>{% endif %}
+    </section>
+  </div>
+
+  <div class="space-y-4">
+    {% include "partials/candidate_side_panels.html" ignore missing %}
+    <section class="card">
+      <h2 class="font-semibold mb-2">Profile</h2>
+      {% if c.summary_notes %}<p class="prose-pre text-sm text-slate-700 mb-3">{{ c.summary_notes }}</p>{% endif %}
+      <ul class="text-sm space-y-1">
+        {% for label, url in [("LinkedIn", c.linkedin_url), ("GitHub", c.github_url), ("Portfolio", c.portfolio_url)] if url %}
+          <li><span class="text-slate-500">{{ label }}:</span> <a class="text-indigo-700 hover:underline break-all" href="{{ url }}" target="_blank" rel="noopener noreferrer">{{ url }}</a></li>
+        {% endfor %}
+        {% for url in c.other_links or [] %}<li><a class="text-indigo-700 hover:underline break-all" href="{{ url }}" target="_blank" rel="noopener noreferrer">{{ url }}</a></li>{% endfor %}
+      </ul>
+    </section>
+    <section class="card">
+      <h2 class="font-semibold mb-2">Activity log</h2>
+      <ol class="text-sm space-y-2 max-h-[32rem] overflow-y-auto">
+        {% for a in c.activities %}
+          <li class="border-l-2 pl-2 {% if a.actor == 'ai' %}border-indigo-400{% elif a.actor == 'recruiter' %}border-emerald-400{% elif a.actor == 'candidate' %}border-sky-400{% else %}border-slate-300{% endif %}">
+            <div class="text-xs text-slate-500">{{ a.created_at|localdt }} · {{ a.actor }} · {{ a.kind }}</div>
+            <div>{{ a.summary }}</div>
+          </li>
+        {% else %}<li class="text-slate-500">No activity yet.</li>{% endfor %}
+      </ol>
+    </section>
+  </div>
+</div>
+{% endblock %}

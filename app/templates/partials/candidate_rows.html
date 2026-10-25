@@ -1,0 +1,16 @@
+{% for c in candidates %}
+<tr class="border-t border-slate-100 hover:bg-slate-50">
+  <td class="px-4 py-2"><a class="text-indigo-700 font-medium hover:underline" href="/candidates/{{ c.id }}">{{ c.full_name }}</a>
+    {% if c.needs_attention %}<span class="badge bg-amber-100 text-amber-800 ml-1" title="{{ c.attention_reason }}">needs attention</span>{% endif %}</td>
+  <td class="px-4 py-2 text-slate-600">{{ c.email }}{% if c.email and c.phone %}<br>{% endif %}{{ c.phone }}</td>
+  <td class="px-4 py-2">{% include "partials/parse_badge.html" %}</td>
+  <td class="px-4 py-2">
+    {% if c.opted_out %}<span class="badge bg-red-100 text-red-800">opted out</span>
+    {% elif c.agent_paused %}<span class="badge bg-slate-200 text-slate-700">paused</span>
+    {% else %}<span class="badge bg-green-100 text-green-800">active</span>{% endif %}
+  </td>
+  <td class="px-4 py-2 text-slate-500">{{ c.created_at|localdt(None, "%Y-%m-%d") }}</td>
+</tr>
+{% else %}
+<tr><td colspan="5" class="px-4 py-8 text-center text-slate-500">{% if q %}No candidates match “{{ q }}”.{% else %}No candidates yet. <a class="text-indigo-700 underline" href="/candidates/new">Add the first one</a>.{% endif %}</td></tr>
+{% endfor %}

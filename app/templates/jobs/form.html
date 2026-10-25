@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}{{ "Edit" if job else "New" }} job · {{ settings.app_name }}{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-semibold mb-4">{{ "Edit job" if job else "New job" }}</h1>
+<form method="post" action="{{ '/jobs/%d/edit'|format(job.id) if job else '/jobs' }}" class="card space-y-4 max-w-3xl">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <div><label class="label" for="title">Title *</label><input class="input" id="title" name="title" value="{{ values.get('title','') }}">
+    {% if errors.get('title') %}<p class="field-error">{{ errors['title'] }}</p>{% endif %}</div>
+  <div><label class="label" for="description">Full job description *</label><textarea class="input" id="description" name="description" rows="14">{{ values.get('description','') }}</textarea>
+    {% if errors.get('description') %}<p class="field-error">{{ errors['description'] }}</p>{% endif %}</div>
+  <div><label class="label" for="required_skills">Required skills (optional, comma separated)</label><input class="input" id="required_skills" name="required_skills" value="{{ values.get('required_skills','') }}"></div>
+  <div class="flex gap-2"><button class="btn btn-primary">{{ "Save" if job else "Create job" }}</button><a class="btn btn-secondary" href="/jobs">Cancel</a></div>
+</form>
+{% endblock %}

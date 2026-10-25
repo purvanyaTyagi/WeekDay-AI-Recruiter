@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Settings · {{ settings.app_name }}{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-semibold mb-4">Settings</h1>
+<form method="post" action="/settings" class="card space-y-4 max-w-xl">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <div>
+    <label class="label">Global send mode</label>
+    <label class="flex items-center gap-2 text-sm"><input type="radio" name="send_mode" value="auto" {% if rs.send_mode == 'auto' %}checked{% endif %}> Auto-send (agent sends replies itself)</label>
+    <label class="flex items-center gap-2 text-sm"><input type="radio" name="send_mode" value="review" {% if rs.send_mode == 'review' %}checked{% endif %}> Review before send (agent drafts, you approve)</label>
+    <p class="text-xs text-slate-500 mt-1">Each candidate can override this on their page.</p>
+  </div>
+  <div class="grid grid-cols-2 gap-4">
+    <div><label class="label" for="qs">Quiet hours start</label><input class="input" id="qs" name="quiet_hours_start" value="{{ rs.quiet_hours_start }}">
+      {% if errors.quiet_hours_start %}<p class="field-error">{{ errors.quiet_hours_start }}</p>{% endif %}</div>
+    <div><label class="label" for="qe">Quiet hours end</label><input class="input" id="qe" name="quiet_hours_end" value="{{ rs.quiet_hours_end }}">
+      {% if errors.quiet_hours_end %}<p class="field-error">{{ errors.quiet_hours_end }}</p>{% endif %}</div>
+  </div>
+  <p class="text-xs text-slate-500 -mt-2">In each candidate's own timezone (default {{ settings.app_timezone }}). Messages due during quiet hours are queued and sent when they end. Set both to the same time to turn quiet hours off.</p>
+  <div><label class="label" for="mpd">Max outbound messages per candidate per 24 hours</label><input class="input w-32" id="mpd" type="number" min="1" max="50" name="max_per_day" value="{{ rs.max_per_day }}">
+    {% if errors.max_per_day %}<p class="field-error">{{ errors.max_per_day }}</p>{% endif %}
+    <p class="text-xs text-slate-500 mt-1">When the AI hits this limit, its drafts go to the review queue instead.</p></div>
+  <button class="btn btn-primary">Save</button>
+</form>
+<div class="card max-w-xl mt-4 text-sm space-y-1">
+  <h2 class="font-semibold mb-1">Providers (from .env)</h2>
+  <p>Email: <strong>{{ email }}</strong>{% if email == 'console' %} — messages are logged to the console, not sent{% endif %}</p>
+  <p>SMS: <strong>{{ sms }}</strong>{% if sms == 'console' %} — messages are logged to the console, not sent{% endif %}</p>
+  <p>Outreach model: <code>{{ settings.outreach_model or "not set" }}</code> · Interview model: <code>{{ settings.interview_model or "not set" }}</code> · Briefing model: <code>{{ settings.briefing_model or "not set" }}</code></p>
+</div>
+{% endblock %}

@@ -1,0 +1,2 @@
+{% set st = iv.status %}
+<span class="badge {% if st == 'scheduled' %}bg-blue-100 text-blue-800{% elif st == 'in_progress' %}bg-violet-100 text-violet-800{% elif st == 'completed' %}bg-green-100 text-green-800{% elif st == 'incomplete' %}bg-amber-100 text-amber-800{% elif st == 'no_show' %}bg-red-100 text-red-800{% else %}bg-slate-200 text-slate-700{% endif %}">{{ st.replace('_', ' ') }}</span>

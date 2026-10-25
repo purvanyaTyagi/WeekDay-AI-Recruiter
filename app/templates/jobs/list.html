@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Jobs · {{ settings.app_name }}{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-4">
+  <h1 class="text-2xl font-semibold">Jobs</h1>
+  <a href="/jobs/new" class="btn btn-primary">+ New job</a>
+</div>
+<div class="space-y-3">
+{% for job in jobs %}
+  <div class="card">
+    <div class="flex items-start justify-between gap-3">
+      <div>
+        <h2 class="font-semibold">{{ job.title }}</h2>
+        <p class="text-xs text-slate-500">{{ counts.get(job.id, 0) }} candidate(s) contacted · {{ interview_counts.get(job.id, 0) }} interview(s)</p>
+      </div>
+      <a href="/jobs/{{ job.id }}/edit" class="btn btn-secondary btn-sm">Edit</a>
+    </div>
+    {% if job.required_skills %}<p class="text-sm mt-2"><span class="text-slate-500">Skills:</span> {{ job.required_skills }}</p>{% endif %}
+    <details class="mt-2"><summary class="cursor-pointer text-sm text-slate-600">Job description</summary>
+      <p class="prose-pre text-sm mt-2">{{ job.description }}</p></details>
+  </div>
+{% else %}
+  <div class="card text-center text-slate-500">No jobs yet. <a class="text-indigo-700 underline" href="/jobs/new">Create one</a> before reaching out to candidates.</div>
+{% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,2 @@
+{% set st = c.resume_parse_status %}
+<span class="badge {% if st == 'ok' %}bg-green-100 text-green-800{% elif st == 'partial' %}bg-amber-100 text-amber-800{% elif st == 'failed' %}bg-red-100 text-red-800{% else %}bg-slate-100 text-slate-600{% endif %}">{{ parse_label(st) }}</span>

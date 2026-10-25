@@ -1,0 +1,2 @@
+<button type="button" class="btn btn-secondary btn-sm" data-copy="{{ link }}"
+  onclick="navigator.clipboard.writeText(this.dataset.copy).then(()=>{const t=this.textContent;this.textContent='Copied';setTimeout(()=>this.textContent=t,1500)})">Copy link</button>

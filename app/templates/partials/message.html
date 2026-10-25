@@ -1,0 +1,42 @@
+{# One message in a conversation. Expects `m`, optional `show_candidate`. #}
+{% set inbound = m.direction == 'inbound' %}
+<div class="rounded-lg border p-3 {% if inbound %}bg-sky-50 border-sky-200 mr-10{% elif m.status == 'pending_review' %}bg-amber-50 border-amber-300 ml-10{% elif m.status == 'failed' %}bg-red-50 border-red-200 ml-10{% elif m.status == 'discarded' %}bg-slate-50 border-slate-200 ml-10 opacity-60{% else %}bg-white border-slate-200 ml-10{% endif %}">
+  <div class="flex flex-wrap items-center gap-1.5 text-xs text-slate-500 mb-1">
+    {% if show_candidate %}<a class="font-semibold text-indigo-700 hover:underline" href="/candidates/{{ m.candidate_id }}">{{ m.candidate.full_name }}</a> ·{% endif %}
+    <span class="font-semibold text-slate-700">{{ "Candidate" if inbound else "Outbound" }}</span>
+    <span class="badge bg-slate-100 text-slate-700">{{ "SMS" if m.channel == 'sms' else "Email" }}</span>
+    {% if m.engagement %}<span class="badge bg-slate-100 text-slate-600">{{ m.engagement.job.title }}</span>{% endif %}
+    {% if not inbound %}
+      {% if m.ai_generated %}<span class="badge bg-indigo-100 text-indigo-800">AI-generated</span>{% endif %}
+      {% if m.approval == 'auto' and m.status in ('sent','queued') %}<span class="badge bg-violet-100 text-violet-800">auto-sent</span>
+      {% elif m.approval == 'human_approved' %}<span class="badge bg-emerald-100 text-emerald-800">human-approved</span>
+      {% elif m.approval == 'human_written' %}<span class="badge bg-emerald-100 text-emerald-800">written by recruiter</span>
+      {% elif m.approval == 'none' %}<span class="badge bg-slate-100 text-slate-700">system</span>{% endif %}
+      <span class="badge {% if m.status == 'sent' %}bg-green-100 text-green-800{% elif m.status == 'failed' %}bg-red-100 text-red-800{% elif m.status in ('pending_review','queued') %}bg-amber-100 text-amber-800{% else %}bg-slate-100 text-slate-600{% endif %}">{{ m.status.replace('_',' ') }}</span>
+    {% endif %}
+    <span class="ml-auto">{{ (m.sent_at or m.created_at)|localdt }}</span>
+  </div>
+  {% if m.hold_reason and m.status in ('pending_review','queued','discarded') %}<p class="text-xs text-amber-800 mb-1">{{ m.hold_reason }}</p>{% endif %}
+  {% if m.error %}<p class="text-xs text-red-700 mb-1">{{ m.error }}</p>{% endif %}
+  {% if m.status == 'pending_review' %}
+    <form method="post" action="/messages/{{ m.id }}/approve" class="space-y-2">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      {% if m.channel == 'email' %}<input class="input text-sm" name="subject" value="{{ m.subject }}" placeholder="Subject (blank = reply in thread)">{% endif %}
+      <textarea class="input text-sm" name="body" rows="6">{{ m.body }}</textarea>
+      <div class="flex gap-2">
+        <button class="btn btn-primary btn-sm">Approve &amp; send</button>
+        <button class="btn btn-secondary btn-sm" formaction="/messages/{{ m.id }}/discard">Discard</button>
+      </div>
+    </form>
+  {% else %}
+    {% if m.subject %}<p class="text-sm font-medium">{{ m.subject }}</p>{% endif %}
+    <p class="prose-pre text-sm">{{ m.body }}</p>
+    {% if m.status in ('queued','failed') %}
+    <form method="post" class="mt-2 flex gap-2">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      {% if m.status == 'failed' %}<button class="btn btn-secondary btn-sm" formaction="/messages/{{ m.id }}/retry">Retry</button>{% endif %}
+      <button class="btn btn-secondary btn-sm" formaction="/messages/{{ m.id }}/discard">Discard</button>
+    </form>
+    {% endif %}
+  {% endif %}
+</div>

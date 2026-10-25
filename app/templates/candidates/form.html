@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}{{ "Edit" if candidate else "Add" }} candidate · {{ settings.app_name }}{% endblock %}
+{% macro field(name, label, type="text", placeholder="") %}
+  <div>
+    <label class="label" for="{{ name }}">{{ label }}</label>
+    <input class="input" id="{{ name }}" name="{{ name }}" type="{{ type }}" value="{{ values.get(name, '') or '' }}" placeholder="{{ placeholder }}">
+    {% if errors.get(name) %}<p class="field-error">{{ errors[name] }}</p>{% endif %}
+  </div>
+{% endmacro %}
+{% block content %}
+<h1 class="text-2xl font-semibold mb-4">{{ "Edit " ~ candidate.full_name if candidate else "Add candidate" }}</h1>
+<form method="post" enctype="multipart/form-data" action="{{ '/candidates/%d/edit'|format(candidate.id) if candidate else '/candidates' }}" class="card space-y-4 max-w-3xl">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  {% if errors %}<p class="text-sm text-red-700">Please fix the errors below.</p>{% endif %}
+  {{ field("full_name", "Full name *") }}
+  <div class="grid md:grid-cols-2 gap-4">
+    {{ field("email", "Email", "email", "name@example.com") }}
+    {{ field("phone", "Mobile number", "tel", "+14155550123") }}
+  </div>
+  <div class="grid md:grid-cols-2 gap-4">
+    <div>
+      <label class="label" for="preferred_channel">Preferred channel</label>
+      <select class="input" id="preferred_channel" name="preferred_channel">
+        {% for ch in ["email", "sms"] %}<option value="{{ ch }}" {% if values.get('preferred_channel', 'email') == ch %}selected{% endif %}>{{ ch|upper if ch == 'sms' else 'Email' }}</option>{% endfor %}
+      </select>
+      {% if errors.get('preferred_channel') %}<p class="field-error">{{ errors['preferred_channel'] }}</p>{% endif %}
+    </div>
+    {{ field("timezone", "Timezone (IANA, optional)", "text", settings.app_timezone) }}
+  </div>
+  <div>
+    <label class="label" for="resume">Resume (PDF or DOCX, max {{ settings.max_upload_mb }} MB)</label>
+    {% if candidate and candidate.resume_filename %}<p class="text-xs text-slate-500 mb-1">Current: {{ candidate.resume_filename }}. Uploading a new file replaces it.</p>{% endif %}
+    <input class="input" id="resume" name="resume" type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+    {% if errors.get('resume') %}<p class="field-error">{{ errors['resume'] }}</p>{% endif %}
+  </div>
+  <div>
+    <label class="label" for="summary_notes">Profile summary / notes</label>
+    <textarea class="input" id="summary_notes" name="summary_notes" rows="5">{{ values.get('summary_notes', '') }}</textarea>
+  </div>
+  <div class="grid md:grid-cols-3 gap-4">
+    {{ field("linkedin_url", "LinkedIn", "text", "linkedin.com/in/…") }}
+    {{ field("github_url", "GitHub", "text", "github.com/…") }}
+    {{ field("portfolio_url", "Portfolio", "text", "https://…") }}
+  </div>
+  <div>
+    <label class="label" for="other_links">Other links (one per line)</label>
+    <textarea class="input" id="other_links" name="other_links" rows="3">{{ (values.get('other_links') or [])|join('\n') }}</textarea>
+  </div>
+  <div class="flex gap-2">
+    <button class="btn btn-primary">{{ "Save changes" if candidate else "Add candidate" }}</button>
+    <a href="{{ '/candidates/%d'|format(candidate.id) if candidate else '/candidates' }}" class="btn btn-secondary">Cancel</a>
+  </div>
+</form>
+{% endblock %}
