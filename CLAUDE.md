@@ -181,7 +181,7 @@ If a *scheduled* interview already exists for that candidate and job, it is resc
 - `GNANI_API_KEY` is **not yet in `.env`** (the user said they'd add one). Next step agreed in principle: a small live check of STT and TTS, then a browser test.
 - The local machine's timezone is IST. Quiet hours (21:00–08:00 in the candidate's timezone) will queue messages at night, which is expected.
 - Postgres testing used `pgserver` in a scratch venv (not part of the project).
-- Not a git repository yet.
+- Git repo on `main`, pushed to `git@github.com:purvanyaTyagi/WeekDay-AI-Recruiter.git` (SSH key `~/.ssh/id_ed25519`, no passphrase; author `purvanyaTyagi <mail2purvanya@gmail.com>` set repo-locally). `.gitignore` keeps out `.env`, `*.db`, `uploads/*` and `.venv/`; before each commit, check no `.env` secret values are staged.
 
 ## Verified vs not verified
 
