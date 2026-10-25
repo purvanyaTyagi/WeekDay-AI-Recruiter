@@ -2,6 +2,10 @@
 
 A web app for one recruiter to register candidates, reach out to them through an **Outreach Agent** (email/SMS), and have an **Interview Agent** interview them over text chat. Both agents run on OpenRouter models. Humans make every decision: the AI drafts, schedules, interviews and summarises, but never rejects, hires or advances anyone.
 
+## Demo video
+
+▶️ **[Watch the project walkthrough](docs/demo.mp4)** (MP4, 26 MB): a screen recording explaining the app and its flow. It opens in GitHub's file viewer, where you can play or download it.
+
 **Stack:** Python 3.11+, FastAPI, Jinja2 + HTMX + Tailwind (no frontend build), SQLAlchemy 2 + Alembic (SQLite or PostgreSQL), APScheduler, OpenRouter via the `openai` SDK, SMTP/IMAP email, Twilio SMS, SSE for the live interview chat (with a polling fallback), optional Gnani speech-to-text and text-to-speech in the interview.
 
 ---
